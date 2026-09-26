@@ -1,0 +1,649 @@
+/* Tessel.UI website — page chrome around the Tessel.js Web Components.
+   Uses Tessel's own CSS custom properties so it stays in sync with the
+   light/dark theme automatically. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--tsl-font, 'Segoe UI', system-ui, sans-serif);
+  background: var(--tsl-background, #f4f5f7);
+  color: var(--tsl-text, #1b1f24);
+  transition: background 180ms ease, color 180ms ease;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ---------- Header ---------- */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--tsl-surface, #fff);
+  border-bottom: 1px solid var(--tsl-border, #e1e4e8);
+}
+
+.site-header__inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+.brand__logo {
+  width: 28px;
+  border-radius: 6px;
+}
+
+.brand__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tsl-text, #1b1f24);
+}
+
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.nav-toggle span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--tsl-text, #1b1f24);
+  margin: 0 auto;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.nav-links a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--tsl-radius-md, 6px);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tsl-text-secondary, #58626f);
+  transition: background 130ms ease, color 130ms ease;
+}
+
+.nav-links a:hover {
+  background: var(--tsl-control-hover, #f2f3f5);
+  color: var(--tsl-text, #1b1f24);
+}
+
+.nav-links a.is-active {
+  color: var(--tsl-accent, #4f46e5);
+  background: var(--tsl-accent-subtle, #eef0ff);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+/* ---------- Language switcher ---------- */
+
+.lang-switcher {
+  position: relative;
+}
+
+.lang-switcher__toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--tsl-radius-md, 6px);
+  border: 1px solid var(--tsl-border, #e1e4e8);
+  background: var(--tsl-control-bg, #fff);
+  color: var(--tsl-text, #1b1f24);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.lang-switcher__toggle:hover {
+  background: var(--tsl-control-hover, #f2f3f5);
+}
+
+.lang-switcher__flag {
+  width: 15px;
+  height: 15px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex: none;
+}
+
+.lang-switcher__chevron {
+  font-size: 16px;
+  color: var(--tsl-text-secondary, #58626f);
+}
+
+.lang-switcher__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 170px;
+  background: var(--tsl-surface, #fff);
+  border: 1px solid var(--tsl-border, #e1e4e8);
+  border-radius: var(--tsl-radius-md, 6px);
+  box-shadow: 0 8px 24px var(--tsl-shadow, rgba(0, 0, 0, 0.12));
+  padding: 4px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 200;
+}
+
+.lang-switcher.is-open .lang-switcher__menu {
+  display: flex;
+}
+
+.lang-switcher__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--tsl-radius-sm, 4px);
+  font-size: 14px;
+  color: var(--tsl-text, #1b1f24);
+}
+
+.lang-switcher__item:hover {
+  background: var(--tsl-control-hover, #f2f3f5);
+}
+
+.lang-switcher__item.is-active {
+  background: var(--tsl-subtle, #eef0f3);
+  font-weight: 600;
+}
+
+/* ---------- Layout sections ---------- */
+
+.site-main {
+  min-height: 60vh;
+}
+
+.section {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.section--alt {
+  background: var(--tsl-surface-alt, #f9fafb);
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.section--alt > * {
+  max-width: 1120px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.section__heading {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 40px;
+}
+
+.section__heading h2 {
+  font-size: 28px;
+  margin: 0 0 12px;
+}
+
+.section__heading p {
+  color: var(--tsl-text-secondary, #58626f);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.page-heading {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 56px 24px 0;
+  text-align: center;
+}
+
+.page-heading h1 {
+  font-size: 32px;
+  margin: 0 0 12px;
+}
+
+.page-heading p {
+  color: var(--tsl-text-secondary, #58626f);
+  margin: 0;
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  padding: 88px 24px 64px;
+  text-align: center;
+}
+
+.hero__inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.hero__title {
+  font-size: 44px;
+  line-height: 1.15;
+  margin: 20px 0 16px;
+}
+
+.hero__subtitle {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--tsl-text-secondary, #58626f);
+  margin: 0 0 32px;
+}
+
+.hero__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Platform grid ---------- */
+
+.platform-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.platform-card {
+  text-align: center;
+  padding: 8px;
+}
+
+.platform-card__icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  object-fit: contain;
+}
+
+.platform-card h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  /* tsl-card sets :host{all:initial}, which resets the host's own inherited
+     color — plain slotted headings must set color explicitly rather than
+     relying on inheritance from the page. */
+  color: var(--tsl-text, #1b1f24);
+}
+
+.platform-card p {
+  margin: 0 0 16px;
+  color: var(--tsl-text-secondary, #58626f);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.platform-card__cta {
+  display: inline-block;
+}
+
+/* ---------- Feature grid ---------- */
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.feature-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.feature-card__icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--tsl-radius-md, 6px);
+  background: var(--tsl-accent-subtle, #eef0ff);
+  color: var(--tsl-accent, #4f46e5);
+  margin-bottom: 10px;
+}
+
+.feature-card h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: var(--tsl-text, #1b1f24);
+}
+
+.feature-card p {
+  margin: 0;
+  color: var(--tsl-text-secondary, #58626f);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ---------- Demo grid ---------- */
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.demo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.demo-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.demo-stack > * {
+  width: 100%;
+}
+
+/* ---------- CTA banner ---------- */
+
+.cta-banner {
+  max-width: 1120px;
+  margin: 0 auto 80px;
+  padding: 48px 24px;
+  border-radius: var(--tsl-radius-lg, 8px);
+  background: var(--tsl-accent-subtle, #eef0ff);
+  text-align: center;
+}
+
+.cta-banner h2 {
+  margin: 0 0 20px;
+  font-size: 26px;
+}
+
+/* ---------- Download / Changelog framework tabs ---------- */
+
+.framework-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.framework-panel-heading__icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex: none;
+}
+
+.framework-panel-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  /* tsl-tabs sets :host{all:initial}, which resets the host's own inherited
+     color — tsl-tab-panel has no shadow root of its own, so plain slotted
+     headings need color set explicitly rather than relying on inheritance. */
+  color: var(--tsl-text, #1b1f24);
+}
+
+/* ---------- Download page ---------- */
+
+.release-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.release-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.release-subheading {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tsl-text-secondary, #58626f);
+  margin: 20px 0 10px;
+}
+
+.release-subheading:first-of-type {
+  margin-top: 0;
+}
+
+.download-footer {
+  text-align: center;
+  margin-top: 32px;
+}
+
+/* ---------- Changelog page ---------- */
+
+.changelog-notes {
+  /* tsl-expander sets :host{all:initial}, which resets its own inherited
+     color — set it explicitly here so every nested paragraph/list/heading
+     below inherits the right value instead of the reset default. */
+  color: var(--tsl-text-secondary, #58626f);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.changelog-notes p {
+  margin: 0 0 10px;
+}
+
+.changelog-notes p:last-child {
+  margin-bottom: 0;
+}
+
+.changelog-notes-heading {
+  font-weight: 600;
+  color: var(--tsl-text, #1b1f24);
+  margin: 18px 0 8px;
+}
+
+.changelog-notes-heading:first-child {
+  margin-top: 0;
+}
+
+.changelog-notes-list {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+
+.changelog-notes-list li {
+  margin-bottom: 4px;
+}
+
+.changelog-notes code {
+  background: var(--tsl-subtle, #eef0f3);
+  color: var(--tsl-text, #1b1f24);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: var(--tsl-font-mono, monospace);
+  font-size: 0.9em;
+}
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+  border-top: 1px solid var(--tsl-border, #e1e4e8);
+  background: var(--tsl-surface, #fff);
+}
+
+.site-footer__inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 32px;
+}
+
+.site-footer__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.site-footer__brand p {
+  margin: 0;
+  color: var(--tsl-text-secondary, #58626f);
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 32ch;
+}
+
+.site-footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.site-footer__col h4 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tsl-text-tertiary, #8a93a0);
+}
+
+.site-footer__col a,
+.site-footer__col span {
+  font-size: 14px;
+  color: var(--tsl-text-secondary, #58626f);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.site-footer__col a:hover {
+  color: var(--tsl-accent, #4f46e5);
+}
+
+.site-footer__bottom {
+  border-top: 1px solid var(--tsl-border, #e1e4e8);
+  padding: 20px 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--tsl-text-tertiary, #8a93a0);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 900px) {
+  .platform-grid,
+  .feature-grid,
+  .demo-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .site-footer__inner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .nav-toggle {
+    display: flex;
+  }
+
+  .nav-links {
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    background: var(--tsl-surface, #fff);
+    border-bottom: 1px solid var(--tsl-border, #e1e4e8);
+    padding: 8px 16px 16px;
+    gap: 4px;
+    display: none;
+  }
+
+  .nav-links.is-open {
+    display: flex;
+  }
+
+  .nav-links a {
+    padding: 12px;
+  }
+
+  .hero__title {
+    font-size: 32px;
+  }
+
+  .platform-grid,
+  .feature-grid,
+  .demo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .site-footer__inner {
+    grid-template-columns: 1fr;
+  }
+}
