@@ -4,9 +4,9 @@ on:
   push:
     branches: [main]
   # Repositories and releases are read at build time, so this is what brings
-  # newly published ones to the site.
+  # new and edited ones to the site. Run it by hand to publish one right away.
   schedule:
-    - cron: '17 */6 * * *'
+    - cron: '7,37 * * * *'
   workflow_dispatch:
 
 concurrency:
