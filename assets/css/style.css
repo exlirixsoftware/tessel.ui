@@ -306,7 +306,8 @@ img {
 
 .platform-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* The number of frameworks comes from GitHub, so it can't be fixed here. */
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
 }
 
@@ -315,7 +316,10 @@ img {
   padding: 8px;
 }
 
+/* The build publishes every logo as a padding-free square (see normalizeLogo),
+   so one size here makes them all match. */
 .platform-card__icon {
+  display: block;
   width: 48px;
   height: 48px;
   margin: 0 auto 16px;
@@ -455,6 +459,22 @@ img {
   gap: 16px;
 }
 
+.repository-info {
+  margin-bottom: 20px;
+}
+
+.repository-info p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  /* Same reset as .framework-panel-heading h2 above. */
+  color: var(--tsl-text-secondary, #58626f);
+}
+
+.repository-info .release-meta {
+  margin-bottom: 0;
+}
+
 .release-meta {
   display: flex;
   align-items: center;
@@ -525,6 +545,21 @@ img {
   border-radius: 4px;
   font-family: var(--tsl-font-mono, monospace);
   font-size: 0.9em;
+}
+
+.changelog-notes tsl-table {
+  margin: 0 0 10px;
+}
+
+.changelog-notes tsl-table:last-child {
+  margin-bottom: 0;
+}
+
+/* tsl-table sets a fixed row height with no vertical padding, which suits
+   single-line cells but leaves wrapped release notes touching the borders. */
+.changelog-notes tsl-table td {
+  padding-block: 10px;
+  vertical-align: top;
 }
 
 /* ---------- Footer ---------- */

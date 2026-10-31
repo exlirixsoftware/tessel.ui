@@ -1,4 +1,5 @@
 import { format, formatBytes, formatDate, h, iconGithub } from '../includes/functions.js';
+import { renderRepositoryInfo } from '../includes/repository.js';
 
 function renderAssets(assets, t) {
   if (assets.length === 0) {
@@ -86,18 +87,20 @@ function renderPanelBody(data, info, t) {
           </div>`;
 }
 
-export function renderDownload({ config, t, asset, releasesByFramework }) {
-  const frameworks = Object.entries(config.frameworks);
+export function renderDownload({ frameworks, t, asset, releasesByFramework }) {
+  const entries = Object.entries(frameworks);
 
-  const tabs = frameworks.map(([key, info]) => `
+  const tabs = entries.map(([key, info]) => `
     <tsl-tab value="${h(key)}">${h(info.label)}</tsl-tab>`).join('');
 
-  const panels = frameworks.map(([key, info]) => `
+  const panels = entries.map(([key, info]) => `
       <tsl-tab-panel value="${h(key)}">
         <div class="framework-panel-heading">
           <img src="${h(asset(info.icon))}" alt="" class="framework-panel-heading__icon">
           <h2>${h(info.label)}</h2>
         </div>
+
+        ${renderRepositoryInfo(key, info, t)}
 
         ${renderPanelBody(releasesByFramework[key], info, t)}
       </tsl-tab-panel>`).join('');
@@ -109,7 +112,7 @@ export function renderDownload({ config, t, asset, releasesByFramework }) {
 </section>
 
 <section class="section">
-  <tsl-tabs value="${h(frameworks[0][0])}">${tabs}
+  <tsl-tabs value="${h(entries[0][0])}">${tabs}
 ${panels}
   </tsl-tabs>
 </section>

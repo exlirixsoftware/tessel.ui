@@ -1,12 +1,14 @@
 /**
- * Shared helpers: escaping, formatting, and the GitHub releases fetcher.
+ * Shared helpers: escaping, formatting, and README logos.
  */
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
 
-const CACHE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'cache');
+/** Published logos are this many pixels square, double their largest display size. */
+const LOGO_SIZE = 128;
+
+/** SVG logos render at this density; it has no effect on other formats. */
+const LOGO_DECODING = { density: 300 };
 
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
 
@@ -65,11 +67,73 @@ export function formatDate(iso) {
   });
 }
 
+/** Apply bold, inline code and links to text that is already escaped. */
+function renderInline(escaped) {
+  return escaped
+    .replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>')
+    .replace(/`([^`]+?)`/g, '<code>$1</code>')
+    .replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      (_, text, url) => `<a href="${url}" target="_blank" rel="noopener">${text}</a>`,
+    );
+}
+
+/** Split a table row into cells. "\|" is a literal pipe, even inside code. */
+function tableCells(line) {
+  return line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/(?<!\\)\|$/, '')
+    .split(/(?<!\\)\|/)
+    .map((cell) => cell.trim().replaceAll('\\|', '|'));
+}
+
+/** Pipes in a list item or heading are just text, so those never start or continue a table. */
+function isTableRow(line) {
+  return /(?<!\\)\|/.test(line) && !/^\s*([-*+]|#{1,6})\s/.test(line);
+}
+
+/** A row like "| --- | :--: |". Alignment colons are accepted but not applied. */
+function isTableDelimiter(line) {
+  return /(?<!\\)\|/.test(line) && tableCells(line).every((cell) => /^:?-+:?$/.test(cell));
+}
+
+/** How many lines the table starting at `start` spans, or 0 if none starts there. */
+function tableLength(lines, start) {
+  const delimiter = lines[start + 1];
+  if (
+    !isTableRow(lines[start])
+    || delimiter === undefined
+    || !isTableDelimiter(delimiter)
+    || tableCells(lines[start]).length !== tableCells(delimiter).length
+  ) {
+    return 0;
+  }
+
+  let end = start + 2;
+  while (end < lines.length && isTableRow(lines[end])) {
+    end++;
+  }
+  return end - start;
+}
+
+/** Render table lines with the same <tsl-table> markup as the download page. */
+function renderTable(lines) {
+  const [header, , ...rows] = lines.map(tableCells);
+  // Every row gets the header's cell count: short rows are padded, extras dropped.
+  const cells = (row, tag) => header
+    .map((_, i) => `<${tag}>${renderInline(row[i] ?? '')}</${tag}>`)
+    .join('');
+
+  return `<tsl-table><table><thead><tr>${cells(header, 'th')}</tr></thead>`
+    + `<tbody>${rows.map((row) => `<tr>${cells(row, 'td')}</tr>`).join('')}</tbody></table></tsl-table>`;
+}
+
 /**
  * Turn a GitHub release body (Markdown, as written in the GitHub UI when
  * publishing a release) into safe, minimally-styled HTML: headings, bullet
- * lists, bold, inline code and links. Not a full Markdown parser — just
- * enough for typical release notes. The input is escaped first, so the
+ * lists, tables, bold, inline code and links. Not a full Markdown parser —
+ * just enough for typical release notes. The input is escaped first, so the
  * output is safe to embed directly.
  */
 export function renderReleaseNotes(body) {
@@ -78,18 +142,39 @@ export function renderReleaseNotes(body) {
     return '';
   }
 
-  const escaped = h(trimmedBody)
-    .replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>')
-    .replace(/`([^`]+?)`/g, '<code>$1</code>')
-    .replace(
-      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-      (_, text, url) => `<a href="${url}" target="_blank" rel="noopener">${text}</a>`,
-    );
+  const lines = h(trimmedBody).split(/\r\n|\r|\n/);
 
+  // Tables are cut out before inline formatting runs, which is applied per
+  // cell: a "**" or "`" pair around a pipe must not produce tags that span cells.
+  let html = '';
+  let textLines = [];
+  let inCodeFence = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*(```|~~~)/.test(lines[i])) {
+      inCodeFence = !inCodeFence;
+    }
+
+    const length = inCodeFence ? 0 : tableLength(lines, i);
+    if (length === 0) {
+      textLines.push(lines[i]);
+      continue;
+    }
+
+    html += renderTextBlocks(textLines) + renderTable(lines.slice(i, i + length));
+    textLines = [];
+    i += length - 1;
+  }
+
+  return html + renderTextBlocks(textLines);
+}
+
+/** Render the headings, lists and paragraphs in a run of non-table lines. */
+function renderTextBlocks(lines) {
   let html = '';
   let inList = false;
 
-  for (const line of escaped.split(/\r\n|\r|\n/)) {
+  for (const line of renderInline(lines.join('\n')).split('\n')) {
     const trimmed = line.trim();
 
     const listItem = trimmed.match(/^[-*+]\s+(.*)$/);
@@ -124,72 +209,79 @@ export function renderReleaseNotes(body) {
   return html;
 }
 
-async function readCache(cacheFile) {
+/**
+ * Find the logo in a README: the first image whose alt text has the word
+ * "logo", written as ![logo](res/icon.png) or <img alt="logo" src="res/icon.png">.
+ * Going by the alt text keeps badges and screenshots out.
+ *
+ * @returns {?string} the image's path or URL, exactly as the README wrote it
+ */
+export function extractReadmeLogo(readme) {
+  for (const match of String(readme ?? '').matchAll(/!\[([^\]]*)\]\(\s*<?([^)\s>]+)|<img\b[^>]*>/gi)) {
+    const [tag, markdownAlt, markdownSrc] = match;
+    const alt = markdownAlt ?? tag.match(/\balt\s*=\s*["']([^"']*)/i)?.[1] ?? '';
+    const src = markdownSrc ?? tag.match(/\bsrc\s*=\s*["']?([^"'\s>]+)/i)?.[1];
+    if (src && /\blogo\b/i.test(alt)) {
+      return src;
+    }
+  }
+  return null;
+}
+
+/**
+ * Turn a logo path from a repo's README into a downloadable URL. Relative
+ * paths, including "/res/icon.png", start at the root of the default branch.
+ *
+ * @returns {?string} an https image URL, or null if the path isn't one
+ */
+export function resolveReadmeLogo(path, repo) {
+  if (!path) {
+    return null;
+  }
+
   try {
-    return JSON.parse(await readFile(cacheFile, 'utf8'));
+    const url = new URL(path.replace(/^\/+/, ''), `https://raw.githubusercontent.com/${repo}/HEAD/`);
+    return url.protocol === 'https:' && /\.(png|jpe?g|gif|webp|svg)$/i.test(url.pathname) ? url.href : null;
   } catch {
     return null;
   }
 }
 
-/** On a failed live fetch, prefer a (marked) stale cache over an error notice. */
-function fallbackToCache(cached, result) {
-  return cached?.ok ? { ...cached, stale: true } : result;
+/** Where a logo's visible part sits on its canvas, or null if it's fully transparent. */
+async function visibleBounds(input) {
+  try {
+    // Trimming the alpha channel alone removes only transparent padding. A
+    // plain trim() would take a solid background for padding and crop into it.
+    // These are two pipelines because sharp always trims before it extracts.
+    const alpha = await sharp(input, LOGO_DECODING).ensureAlpha().extractChannel('alpha').png().toBuffer();
+    const { info } = await sharp(alpha).trim({ background: 'black' }).toBuffer({ resolveWithObject: true });
+
+    return {
+      left: -info.trimOffsetLeft,
+      top: -info.trimOffsetTop,
+      width: info.width,
+      height: info.height,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
- * Fetch releases for a GitHub repo via the REST API, cached to a local JSON
- * file so repeated builds stay fast and don't get rate-limited. Freshness is
- * tracked by a timestamp inside the file rather than its mtime, because a
- * fresh checkout would otherwise make the committed cache look current.
- *
- * Set GITHUB_TOKEN to raise the rate limit, which matters on shared CI hosts.
- *
- * @returns {Promise<{ok: boolean, releases: object[], error: ?string, stale: boolean}>}
+ * Write a logo as a square transparent PNG of the shared size. Its transparent
+ * padding is removed first, because a box of equal size can't make logos look
+ * equal while each one fills a different share of its own canvas.
  */
-export async function fetchGithubReleases(repo, ttl) {
-  await mkdir(CACHE_DIR, { recursive: true });
-  const cacheFile = join(CACHE_DIR, `github_releases_${repo.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`);
+export async function normalizeLogo(input, output) {
+  const bounds = await visibleBounds(input);
+  const image = sharp(input, LOGO_DECODING);
 
-  const cached = await readCache(cacheFile);
-  if (cached && Date.now() - (cached.fetchedAt ?? 0) < ttl * 1000) {
-    return cached;
+  if (bounds) {
+    image.extract(bounds);
   }
 
-  const result = { ok: false, releases: [], error: null, stale: false };
-
-  let response;
-  let decoded;
-  try {
-    response = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=100`, {
-      headers: {
-        'User-Agent': 'Tessel-UI-Website',
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-        ...(process.env.GITHUB_TOKEN && { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }),
-      },
-      signal: AbortSignal.timeout(10000),
-    });
-    decoded = await response.json().catch(() => null);
-  } catch (error) {
-    result.error = `Could not reach GitHub (${error.cause?.message ?? error.message}).`;
-    return fallbackToCache(cached, result);
-  }
-
-  if (response.status !== 200) {
-    result.error = decoded?.message ?? `GitHub API returned HTTP ${response.status}.`;
-    return fallbackToCache(cached, result);
-  }
-
-  if (!Array.isArray(decoded)) {
-    result.error = 'Unexpected response from GitHub.';
-    return fallbackToCache(cached, result);
-  }
-
-  result.ok = true;
-  // A token with push access also lists drafts, which must never go public.
-  result.releases = decoded.filter((release) => !release.draft);
-  await writeFile(cacheFile, JSON.stringify({ ...result, fetchedAt: Date.now() }));
-
-  return result;
+  await image
+    .resize(LOGO_SIZE, LOGO_SIZE, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toFile(output);
 }

@@ -1,12 +1,12 @@
 import { h, iconGithub, jsonForScript } from '../includes/functions.js';
 
-export function renderHome({ config, t, asset, pageUrl }) {
-  const platforms = Object.entries(config.frameworks).map(([key, info]) => `
+export function renderHome({ frameworks, t, asset, pageUrl }) {
+  const platforms = Object.entries(frameworks).map(([key, info]) => `
       <tsl-card>
         <div class="platform-card">
           <img src="${h(asset(info.icon))}" alt="${h(info.label)}" class="platform-card__icon">
-          <h3>${h(t(`platforms.${key}.title`))}</h3>
-          <p>${h(t(`platforms.${key}.desc`))}</p>
+          <h3>${h(info.label)}</h3>
+          <p>${h(t(`platforms.${key}.desc`, info.description ?? ''))}</p>
           <a href="${h(`${pageUrl('download')}?fw=${key}`)}" class="platform-card__cta">
             <tsl-button variant="outline" icon="download">${h(t('download.table.download_btn'))}</tsl-button>
           </a>
