@@ -1,0 +1,14 @@
+{
+  "name": "tessel-ui-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Tessel.UI website, built into static HTML.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "start": "node serve.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

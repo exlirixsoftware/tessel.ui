@@ -11,6 +11,7 @@ import {
 } from '../../lib/tessel.min.js';
 
 const THEME_KEY = 'tessel-theme';
+const LANG_KEY = 'tessel-lang';
 
 function readStoredTheme() {
   try {
@@ -66,6 +67,29 @@ function setupLanguageSwitcher() {
   });
 }
 
+function setupLanguageLinks() {
+  document.querySelectorAll('a[data-lang]').forEach((link) => {
+    link.addEventListener('click', () => {
+      try {
+        localStorage.setItem(LANG_KEY, link.dataset.lang);
+      } catch (e) {
+        /* localStorage unavailable (private mode, etc.) — choice just won't persist */
+      }
+      // Carry ?fw= over, so switching language keeps the open framework tab.
+      link.search = location.search;
+    });
+  });
+}
+
+function selectRequestedFramework() {
+  const requested = new URLSearchParams(location.search).get('fw');
+  const tabs = document.querySelector('tsl-tabs');
+  if (!requested || !tabs) return;
+
+  const isKnown = [...tabs.querySelectorAll('tsl-tab')].some((tab) => tab.getAttribute('value') === requested);
+  if (isKnown) tabs.setAttribute('value', requested);
+}
+
 function setupDemoButtons() {
   const strings = window.__tesselDemoStrings;
   if (!strings) return;
@@ -99,5 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderFeatureIcons();
   setupMobileNav();
   setupLanguageSwitcher();
+  setupLanguageLinks();
+  selectRequestedFramework();
   setupDemoButtons();
 });
